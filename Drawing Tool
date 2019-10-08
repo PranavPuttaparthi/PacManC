@@ -40,6 +40,9 @@ public class DrawingTool extends JPanel implements ActionListener, MouseListener
     private int numRecentColors = 5;
     private int[] recentColors = new int[numRecentColors];
     private boolean clickedRecent = false;
+    private boolean mouseClicked;
+    private boolean mousePressed;
+    private boolean mouseDragged;
     private int mouseX;
     private int mouseY;
 
@@ -58,9 +61,217 @@ public class DrawingTool extends JPanel implements ActionListener, MouseListener
         copy = new int[0][0];
     }
 
-    public void paintComponent(Graphics g)
+    public void update()
     {
-        super.paintComponent(g);
+        if(mousePressed)
+        {
+            if(mouseX >= colorPickerX + 191 && mouseX <= colorPickerX + 194)
+                mouseX = colorPickerX + 191;
+            if(mouseX >= colorPickerX + 195 && mouseX <= colorPickerX + 197)
+                mouseX = colorPickerX + 197;
+            if(mouseX >= colorPickerX && mouseX < colorPickerX + 223 && mouseY >= colorPickerY && mouseY < colorPickerY + 192)
+            {
+                if(mouseX == colorPickerX)
+                {
+                    colorR = 255;
+                    colorG = 0;
+                    colorB = 0;
+                }
+                else if(mouseX < colorPickerX + 32)
+                {
+                    colorR = 255;
+                    colorG = (mouseX - colorPickerX) % 32 * 8;
+                    colorB = 0;
+                }
+                else if(mouseX < colorPickerX + 64)
+                {
+                    colorR = 255 - (mouseX - colorPickerX) % 32 * 8;
+                    colorG = 255;
+                    colorB = 0;
+                }
+                else if(mouseX < colorPickerX + 96)
+                {
+                    colorR = 0;
+                    colorG = 255;
+                    colorB = (mouseX - colorPickerX) % 32 * 8;
+                }
+                else if(mouseX < colorPickerX + 128)
+                {
+                    colorR = 0;
+                    colorG = 255 - (mouseX - colorPickerX) % 32 * 8;
+                    colorB = 255;
+                }
+                else if(mouseX < colorPickerX + 160)
+                {
+                    colorR = (mouseX - colorPickerX) % 32 * 8;
+                    colorG = 0;
+                    colorB = 255;
+                }
+                else if(mouseX < colorPickerX + 192)
+                {
+                    colorR = 255;
+                    colorG = 0;
+                    colorB = 255 - (mouseX - colorPickerX) % 32 * 8;
+                }
+                else
+                {
+                    colorR = 128;
+                    colorG = 128;
+                    colorB = 128;
+                }
+                if(mouseY >= colorPickerY && mouseY < colorPickerY + 96)
+                {
+                    colorR = (int) (colorR * (mouseY - colorPickerY)/96.0);
+                    colorG = (int) (colorG * (mouseY - colorPickerY)/96.0);
+                    colorB = (int) (colorB * (mouseY - colorPickerY)/96.0);
+                }
+                else if(mouseY >= colorPickerY + 96 && mouseY < colorPickerY + 192)
+                {
+                    colorR = 255 - (int) ((255 - colorR) * (colorPickerY + 191 - mouseY)/96.0);
+                    colorG = 255 - (int) ((255 - colorG) * (colorPickerY + 191 - mouseY)/96.0);
+                    colorB = 255 - (int) ((255 - colorB) * (colorPickerY + 191 - mouseY)/96.0);
+                }
+                colorR = (int) Math.round(colorR/8.0) * 8;
+                colorG = (int) Math.round(colorG/8.0) * 8;
+                colorB = (int) Math.round(colorB/8.0) * 8;
+                colorR = Math.max(colorR, 0);
+                colorG = Math.max(colorG, 0);
+                colorB = Math.max(colorB, 0);
+                colorR = Math.min(colorR, 255);
+                colorG = Math.min(colorG, 255);
+                colorB = Math.min(colorB, 255);
+                colorX = mouseX;
+                colorY = mouseY;
+                if(colorX >= colorPickerX + 191 && colorX <= colorPickerX + 194)
+                    colorX = colorPickerX + 191;
+                if(colorX >= colorPickerX + 195 && colorX <= colorPickerX + 197)
+                    colorX = colorPickerX + 197;
+                clickedRecent = false;
+            }
+            else if(mouseX >= 0 && mouseX < height && mouseY >= 0 && mouseY < height)
+            {
+                if(drawingMode.equals("Draw"))
+                {
+                    for(int y = size * mouseY/height - drawingSize/2; y <= size * mouseY/height + drawingSize/2; y++)
+                    {
+                        for(int x = size * mouseX/height - drawingSize/2; x <= size * mouseX/height + drawingSize/2; x++)
+                        {
+                            boolean stillRecent = false;
+                            for(int i = recentColors.length - 1; i >= 0; i--)
+                            {
+                                if(recentColors[i] == rgbNum(colorR, colorG, colorB))
+                                    stillRecent = true;
+                            }
+                            if(stillRecent && (colorR != -1 && colorG != -1 && colorB != -1))
+                            {
+                                int color = 0;
+                                int index = 0;
+                                for(int i = recentColors.length - 1; i >= 0; i--)
+                                {
+                                    if(recentColors[i] == rgbNum(colorR, colorG, colorB))
+                                    {
+                                        color = rgbNum(colorR, colorG, colorB);
+                                        index = i;
+                                        if(clickedRecent)
+                                        {
+                                            colorX = 537;
+                                            colorY = 247;
+                                        }
+                                    }
+                                }
+                                for(int i = index; i >= 1; i--)
+                                {
+                                    recentColors[i] = recentColors[i - 1];
+                                }
+                                recentColors[0] = color;
+                            }
+                            else if(colorR != -1 && colorG != -1 && colorB != -1)
+                            {
+                                for(int i = recentColors.length - 1; i >= 0; i--)
+                                {
+                                    if(i == 0)
+                                        recentColors[0] = rgbNum(colorR, colorG, colorB);
+                                    else
+                                        recentColors[i] = recentColors[i - 1];
+                                }
+                            }
+                            if(colorR != -1 && colorG != -1 && colorB != -1)
+                                pixels[Math.min(Math.max(x, 0), 63)][Math.min(Math.max(y, 0), 63)] = rgbNum(colorR, colorG, colorB);
+                        }
+                    }
+                }
+                else if(drawingMode.equals("Copy"))
+                {
+                    if(mouseClicked && drawCopyText && mouseX > (x2 - x1)/2 + x1 - copyTextWidth/2 && mouseX < (x2 - x1)/2 + x1 + copyTextWidth/2 && mouseY > (y2 - y1)/2 + y1 - copyTextHeight/2 && mouseY < (y2 - y1)/2 + y1 + copyTextHeight/2)
+                        copy();
+                    else if(mouseClicked && drawCopyText)
+                    {
+                        x1 = -1;
+                        y1 = -1;
+                        x2 = -1;
+                        y2 = -1;
+                    }
+                    if(mouseDragged)
+                    {
+                        if(x1 == -1)
+                            x1 = 8 * (int) (mouseX/8.0);
+                        if(y1 == -1)
+                            y1 = 8 * (int) (mouseY/8.0);
+                        x2 = 8 * (int) (mouseX/8.0 + 1);
+                        y2 = 8 * (int) (mouseY/8.0 + 1);
+                    }
+                }
+                else if(drawingMode.equals("Paste"))
+                {
+                    if(copy.length > 0 && pasteWidth > 0 && pasteHeight > 0)
+                        paste();
+                }
+            }
+            if(mouseX > width - 100 && mouseX < width - 10 && mouseY > height - 100 && mouseY < height - 10)
+            {
+                try
+                {
+                    saveTexture();
+                }
+                catch(IOException e)
+                {
+
+                }
+            }
+            if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 122 - rectHeight/2 && mouseY < 122 + rectHeight)
+                drawingSize = 1;
+            if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 142 - rectHeight/2 && mouseY < 142 + rectHeight)
+                drawingSize = 3;
+            if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 162 - rectHeight/2 && mouseY < 162 + rectHeight)
+                drawingSize = 5;
+            if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 182 - rectHeight/2 && mouseY < 182 + rectHeight)
+                drawingSize = 7;
+            if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 202 - rectHeight/2 && mouseY < 202 + rectHeight)
+                drawingSize = 9;
+            if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 312 - rectHeight/2 && mouseY < 312 + rectWidth)
+                drawingMode = "Draw";
+            if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 332 - rectHeight/2 && mouseY < 332 + rectWidth)
+                drawingMode = "Copy";
+            if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 352 - rectHeight/2 && mouseY < 352 + rectWidth)
+                drawingMode = "Paste";
+            for(int i = 0; i < recentColors.length; i++)
+            {
+                if(mouseX > 522 + 40 * i && mouseX < 552 + 40 * i && mouseY > 232 && mouseY < 262)
+                {
+                    colorR = getR(recentColors[i]);
+                    colorG = getG(recentColors[i]);
+                    colorB = getB(recentColors[i]);
+                    colorX = 537 + 40 * i;
+                    colorY = 247;
+                    clickedRecent = true;
+                }
+            }
+            drawCopyText = false;
+        }
+    }
+
+    public void draw(Graphics g)
+    {
         g.setColor(new Color(192, 192, 192));
         g.fillRect(0, 0, width, height);
         for(int x = 0; x < size; x++)
@@ -310,209 +521,32 @@ public class DrawingTool extends JPanel implements ActionListener, MouseListener
             g.drawOval(colorX - 4, colorY - 4, 8, 8);
             g.drawOval(colorX - 5, colorY - 5, 10, 10);
         }
+    }
+
+    public void addNotify()
+    {
+        super.addNotify();
+        requestFocus();
+    }
+
+    public void paintComponent(Graphics g)
+    {
+        super.paintComponent(g);
+        draw(g);
+        if(mouseClicked)
+            mouseClicked = false;
         tm.start();
     }
 
-    public void actionPerformed(ActionEvent ae)
+    public void actionPerformed(ActionEvent e)
     {
+        update();
         repaint();
     }
 
     public void mouseClicked(MouseEvent me)
     {
-        if(mouseX >= colorPickerX + 191 && mouseX <= colorPickerX + 194)
-            mouseX = colorPickerX + 191;
-        if(mouseX >= colorPickerX + 195 && mouseX <= colorPickerX + 197)
-            mouseX = colorPickerX + 197;
-        if(mouseX >= colorPickerX && mouseX < colorPickerX + 223 && mouseY >= colorPickerY && mouseY < colorPickerY + 192)
-        {
-            if(mouseX == colorPickerX)
-            {
-                colorR = 255;
-                colorG = 0;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 32)
-            {
-                colorR = 255;
-                colorG = (mouseX - colorPickerX) % 32 * 8;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 64)
-            {
-                colorR = 255 - (mouseX - colorPickerX) % 32 * 8;
-                colorG = 255;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 96)
-            {
-                colorR = 0;
-                colorG = 255;
-                colorB = (mouseX - colorPickerX) % 32 * 8;
-            }
-            else if(mouseX < colorPickerX + 128)
-            {
-                colorR = 0;
-                colorG = 255 - (mouseX - colorPickerX) % 32 * 8;
-                colorB = 255;
-            }
-            else if(mouseX < colorPickerX + 160)
-            {
-                colorR = (mouseX - colorPickerX) % 32 * 8;
-                colorG = 0;
-                colorB = 255;
-            }
-            else if(mouseX < colorPickerX + 192)
-            {
-                colorR = 255;
-                colorG = 0;
-                colorB = 255 - (mouseX - colorPickerX) % 32 * 8;
-            }
-            else
-            {
-                colorR = 128;
-                colorG = 128;
-                colorB = 128;
-            }
-            if(mouseY >= colorPickerY && mouseY < colorPickerY + 96)
-            {
-                colorR = (int) (colorR * (mouseY - colorPickerY)/96.0);
-                colorG = (int) (colorG * (mouseY - colorPickerY)/96.0);
-                colorB = (int) (colorB * (mouseY - colorPickerY)/96.0);
-            }
-            else if(mouseY >= colorPickerY + 96 && mouseY < colorPickerY + 192)
-            {
-                colorR = 255 - (int) ((255 - colorR) * (colorPickerY + 191 - mouseY)/96.0);
-                colorG = 255 - (int) ((255 - colorG) * (colorPickerY + 191 - mouseY)/96.0);
-                colorB = 255 - (int) ((255 - colorB) * (colorPickerY + 191 - mouseY)/96.0);
-            }
-            colorR = (int) Math.round(colorR/8.0) * 8;
-            colorG = (int) Math.round(colorG/8.0) * 8;
-            colorB = (int) Math.round(colorB/8.0) * 8;
-            colorR = Math.max(colorR, 0);
-            colorG = Math.max(colorG, 0);
-            colorB = Math.max(colorB, 0);
-            colorR = Math.min(colorR, 255);
-            colorG = Math.min(colorG, 255);
-            colorB = Math.min(colorB, 255);
-            colorX = mouseX;
-            colorY = mouseY;
-            if(colorX >= colorPickerX + 191 && colorX <= colorPickerX + 194)
-                colorX = colorPickerX + 191;
-            if(colorX >= colorPickerX + 195 && colorX <= colorPickerX + 197)
-                colorX = colorPickerX + 197;
-            clickedRecent = false;
-        }
-        else if(mouseX >= 0 && mouseX < height && mouseY >= 0 && mouseY < height)
-        {
-            if(drawingMode.equals("Draw"))
-            {
-                for(int y = size * mouseY/height - drawingSize/2; y <= size * mouseY/height + drawingSize/2; y++)
-                {
-                    for(int x = size * mouseX/height - drawingSize/2; x <= size * mouseX/height + drawingSize/2; x++)
-                    {
-                        boolean stillRecent = false;
-                        for(int i = recentColors.length - 1; i >= 0; i--)
-                        {
-                            if(recentColors[i] == rgbNum(colorR, colorG, colorB))
-                                stillRecent = true;
-                        }
-                        if(stillRecent && (colorR != -1 && colorG != -1 && colorB != -1))
-                        {
-                            int color = 0;
-                            int index = 0;
-                            for(int i = recentColors.length - 1; i >= 0; i--)
-                            {
-                                if(recentColors[i] == rgbNum(colorR, colorG, colorB))
-                                {
-                                    color = rgbNum(colorR, colorG, colorB);
-                                    index = i;
-                                    if(clickedRecent)
-                                    {
-                                        colorX = 537;
-                                        colorY = 247;
-                                    }
-                                }
-                            }
-                            for(int i = index; i >= 1; i--)
-                            {
-                                recentColors[i] = recentColors[i - 1];
-                            }
-                            recentColors[0] = color;
-                        }
-                        else if(colorR != -1 && colorG != -1 && colorB != -1)
-                        {
-                            for(int i = recentColors.length - 1; i >= 0; i--)
-                            {
-                                if(i == 0)
-                                    recentColors[0] = rgbNum(colorR, colorG, colorB);
-                                else
-                                    recentColors[i] = recentColors[i - 1];
-                            }
-                        }
-                        if(colorR != -1 && colorG != -1 && colorB != -1)
-                            pixels[Math.min(Math.max(x, 0), 63)][Math.min(Math.max(y, 0), 63)] = rgbNum(colorR, colorG, colorB);
-                    }
-                }
-            }
-            else if(drawingMode.equals("Copy"))
-            {
-                if(drawCopyText && mouseX > (x2 - x1)/2 + x1 - copyTextWidth/2 && mouseX < (x2 - x1)/2 + x1 + copyTextWidth/2 && mouseY > (y2 - y1)/2 + y1 - copyTextHeight/2 && mouseY < (y2 - y1)/2 + y1 + copyTextHeight/2)
-                    copy();
-                else
-                {
-                    x1 = -1;
-                    y1 = -1;
-                    x2 = -1;
-                    y2 = -1;
-                }
-            }
-            else if(drawingMode.equals("Paste"))
-            {
-                if(copy.length > 0 && pasteWidth > 0 && pasteHeight > 0)
-                    paste();
-            }
-        }
-        if(mouseX > width - 100 && mouseX < width - 10 && mouseY > height - 100 && mouseY < height - 10)
-        {
-            try
-            {
-                saveTexture();
-            }
-            catch(IOException e)
-            {
-                
-            }
-        }
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 122 - rectHeight/2 && mouseY < 122 + rectHeight)
-            drawingSize = 1;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 142 - rectHeight/2 && mouseY < 142 + rectHeight)
-            drawingSize = 3;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 162 - rectHeight/2 && mouseY < 162 + rectHeight)
-            drawingSize = 5;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 182 - rectHeight/2 && mouseY < 182 + rectHeight)
-            drawingSize = 7;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 202 - rectHeight/2 && mouseY < 202 + rectHeight)
-            drawingSize = 9;
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 312 - rectHeight/2 && mouseY < 312 + rectWidth)
-            drawingMode = "Draw";
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 332 - rectHeight/2 && mouseY < 332 + rectWidth)
-            drawingMode = "Copy";
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 352 - rectHeight/2 && mouseY < 352 + rectWidth)
-            drawingMode = "Paste";
-        for(int i = 0; i < recentColors.length; i++)
-        {
-            if(mouseX > 522 + 40 * i && mouseX < 552 + 40 * i && mouseY > 232 && mouseY < 262)
-            {
-                colorR = getR(recentColors[i]);
-                colorG = getG(recentColors[i]);
-                colorB = getB(recentColors[i]);
-                colorX = 537 + 40 * i;
-                colorY = 247;
-                clickedRecent = true;
-            }
-        }
-        repaint();
+        mouseClicked = true;
     }
 
     public void mouseEntered(MouseEvent me)
@@ -522,234 +556,35 @@ public class DrawingTool extends JPanel implements ActionListener, MouseListener
 
     public void mouseExited(MouseEvent me)
     {
-
+        mouseClicked = false;
+        mousePressed = false;
+        mouseDragged = false;
     }
 
     public void mousePressed(MouseEvent me)
     {
-        if(drawingMode.equals("Copy"))
-        {
-            if(drawCopyText && mouseX > (x2 - x1)/2 + x1 - copyTextWidth/2 && mouseX < (x2 - x1)/2 + x1 + copyTextWidth/2 && mouseY > (y2 - y1)/2 + y1 - copyTextHeight/2 && mouseY < (y2 - y1)/2 + y1 + copyTextHeight/2)
-                copy();
-            else
-            {
-                x1 = -1;
-                y1 = -1;
-                x2 = -1;
-                y2 = -1;
-            }
-        }
-        drawCopyText = false;
+        mousePressed = true;
     }
 
     public void mouseReleased(MouseEvent me)
     {
-        if(drawingMode.equals("Copy") && (x2 != x1 || y2 != y1))
-        {
+        mousePressed = false;
+        mouseDragged = false;
+        if(drawingMode.equals("Copy") && !(x2 == x1 && y2 == y1))
             drawCopyText = true;
-        }
     }
 
     public void mouseDragged(MouseEvent me)
     {
+        mousePressed = true;
+        mouseDragged = true;
         mouseX = me.getX();
         mouseY = me.getY();
-        if(mouseX >= colorPickerX + 191 && mouseX <= colorPickerX + 194)
-            mouseX = colorPickerX + 191;
-        if(mouseX >= colorPickerX + 195 && mouseX <= colorPickerX + 197)
-            mouseX = colorPickerX + 197;
-        if(mouseX >= colorPickerX && mouseX < colorPickerX + 223 && mouseY >= colorPickerY && mouseY < colorPickerY + 192)
-        {
-            if(mouseX == colorPickerX)
-            {
-                colorR = 255;
-                colorG = 0;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 32)
-            {
-                colorR = 255;
-                colorG = (mouseX - colorPickerX) % 32 * 8;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 64)
-            {
-                colorR = 255 - (mouseX - colorPickerX) % 32 * 8;
-                colorG = 255;
-                colorB = 0;
-            }
-            else if(mouseX < colorPickerX + 96)
-            {
-                colorR = 0;
-                colorG = 255;
-                colorB = (mouseX - colorPickerX) % 32 * 8;
-            }
-            else if(mouseX < colorPickerX + 128)
-            {
-                colorR = 0;
-                colorG = 255 - (mouseX - colorPickerX) % 32 * 8;
-                colorB = 255;
-            }
-            else if(mouseX < colorPickerX + 160)
-            {
-                colorR = (mouseX - colorPickerX) % 32 * 8;
-                colorG = 0;
-                colorB = 255;
-            }
-            else if(mouseX < colorPickerX + 192)
-            {
-                colorR = 255;
-                colorG = 0;
-                colorB = 255 - (mouseX - colorPickerX) % 32 * 8;
-            }
-            else
-            {
-                colorR = 128;
-                colorG = 128;
-                colorB = 128;
-            }
-            if(mouseY >= colorPickerY && mouseY < colorPickerY + 96)
-            {
-                colorR = (int) (colorR * (mouseY - colorPickerY)/96.0);
-                colorG = (int) (colorG * (mouseY - colorPickerY)/96.0);
-                colorB = (int) (colorB * (mouseY - colorPickerY)/96.0);
-            }
-            else if(mouseY >= colorPickerY + 96 && mouseY < colorPickerY + 192)
-            {
-                colorR = 255 - (int) ((255 - colorR) * (colorPickerY + 191 - mouseY)/96.0);
-                colorG = 255 - (int) ((255 - colorG) * (colorPickerY + 191 - mouseY)/96.0);
-                colorB = 255 - (int) ((255 - colorB) * (colorPickerY + 191 - mouseY)/96.0);
-            }
-            colorR = (int) Math.round(colorR/8.0) * 8;
-            colorG = (int) Math.round(colorG/8.0) * 8;
-            colorB = (int) Math.round(colorB/8.0) * 8;
-            colorR = Math.max(colorR, 0);
-            colorG = Math.max(colorG, 0);
-            colorB = Math.max(colorB, 0);
-            colorR = Math.min(colorR, 255);
-            colorG = Math.min(colorG, 255);
-            colorB = Math.min(colorB, 255);
-            colorX = mouseX;
-            colorY = mouseY;
-            if(colorX >= colorPickerX + 191 && colorX <= colorPickerX + 194)
-                colorX = colorPickerX + 191;
-            if(colorX >= colorPickerX + 195 && colorX <= colorPickerX + 197)
-                colorX = colorPickerX + 197;
-            clickedRecent = false;
-        }
-        else if(mouseX >= 0 && mouseX < height && mouseY >= 0 && mouseY < height)
-        {
-            if(drawingMode.equals("Draw"))
-            {
-                for(int y = size * mouseY/height - drawingSize/2; y <= size * mouseY/height + drawingSize/2; y++)
-                {
-                    for(int x = size * mouseX/height - drawingSize/2; x <= size * mouseX/height + drawingSize/2; x++)
-                    {
-                        boolean stillRecent = false;
-                        for(int i = recentColors.length - 1; i >= 0; i--)
-                        {
-                            if(recentColors[i] == rgbNum(colorR, colorG, colorB))
-                                stillRecent = true;
-                        }
-                        if(stillRecent && (colorR != -1 && colorG != -1 && colorB != -1))
-                        {
-                            int color = 0;
-                            int index = 0;
-                            for(int i = recentColors.length - 1; i >= 0; i--)
-                            {
-                                if(recentColors[i] == rgbNum(colorR, colorG, colorB))
-                                {
-                                    color = rgbNum(colorR, colorG, colorB);
-                                    index = i;
-                                    if(clickedRecent)
-                                    {
-                                        colorX = 537;
-                                        colorY = 247;
-                                    }
-                                }
-                            }
-                            for(int i = index; i >= 1; i--)
-                            {
-                                recentColors[i] = recentColors[i - 1];
-                            }
-                            recentColors[0] = color;
-                        }
-                        else if(colorR != -1 && colorG != -1 && colorB != -1)
-                        {
-                            for(int i = recentColors.length - 1; i >= 0; i--)
-                            {
-                                if(i == 0)
-                                    recentColors[0] = rgbNum(colorR, colorG, colorB);
-                                else
-                                    recentColors[i] = recentColors[i - 1];
-                            }
-                        }
-                        if(colorR != -1 && colorG != -1 && colorB != -1)
-                            pixels[Math.min(Math.max(x, 0), 63)][Math.min(Math.max(y, 0), 63)] = rgbNum(colorR, colorG, colorB);
-                    }
-                }
-            }
-            else if(drawingMode.equals("Copy"))
-            {
-                if(x1 == -1)
-                    x1 = 8 * (int) (mouseX/8.0);
-                if(y1 == -1)
-                    y1 = 8 * (int) (mouseY/8.0);
-                x2 = 8 * (int) (mouseX/8.0 + 1);
-                y2 = 8 * (int) (mouseY/8.0 + 1);
-                if(drawCopyText && mouseX > (x2 - x1)/2 + x1 - copyTextWidth/2 && mouseX < (x2 - x1)/2 + x1 + copyTextWidth/2 && mouseY > (y2 - y1)/2 + y1 - copyTextHeight/2 && mouseY < (y2 - y1)/2 + y1 + copyTextHeight/2)
-                    copy();
-            }
-            else if(drawingMode.equals("Paste"))
-            {
-                if(copy.length > 0 && pasteWidth > 0 && pasteHeight > 0)
-                    paste();
-            }
-        }
-        if(mouseX > width - 100 && mouseX < width - 10 && mouseY > height - 100 && mouseY < height - 10)
-        {
-            try
-            {
-                saveTexture();
-            }
-            catch(IOException e)
-            {
-                
-            }
-        }
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 122 - rectHeight/2 && mouseY < 122 + rectHeight)
-            drawingSize = 1;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 142 - rectHeight/2 && mouseY < 142 + rectHeight)
-            drawingSize = 3;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 162 - rectHeight/2 && mouseY < 162 + rectHeight)
-            drawingSize = 5;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 182 - rectHeight/2 && mouseY < 182 + rectHeight)
-            drawingSize = 7;
-        if(mouseX > 765 && mouseX < 775 + rectWidth && mouseY > 202 - rectHeight/2 && mouseY < 202 + rectHeight)
-            drawingSize = 9;
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 312 - rectHeight/2 && mouseY < 312 + rectWidth)
-            drawingMode = "Draw";
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 332 - rectHeight/2 && mouseY < 332 + rectWidth)
-            drawingMode = "Copy";
-        if(mouseX > 532 && mouseX < 542 + rectWidth2 && mouseY > 352 - rectHeight/2 && mouseY < 352 + rectWidth)
-            drawingMode = "Paste";
-        for(int i = 0; i < recentColors.length; i++)
-        {
-            if(mouseX > 522 + 40 * i && mouseX < 552 + 40 * i && mouseY > 232 && mouseY < 262)
-            {
-                colorR = getR(recentColors[i]);
-                colorG = getG(recentColors[i]);
-                colorB = getB(recentColors[i]);
-                colorX = 537 + 40 * i;
-                colorY = 247;
-                clickedRecent = true;
-            }
-        }
-        repaint();
     }
 
     public void mouseMoved(MouseEvent me)
     {
+        mousePressed = false;
         mouseX = me.getX();
         mouseY = me.getY();
     }
